@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Button } from 'react-native';
 import { Table, Row } from 'react-native-table-component';
 import InputModal from './Modal';
 
-function EditableTable({ fetchedData, modalVisible, setModalVisible, handleDeleteData, handleAddData, handleFetchData }) {
-  const tableHead = ['Date', 'Octopus', 'Prawn', 'Fish', 'Action'];
+function EditableTable({ fetchedData, modalVisible, loading, closed, setClosed, handleUpdateData,  setModalVisible, handleDeleteData, handleAddData, handleFetchData }) {
+  const tableHead = ['Date', 'Octopus', 'Prawn', 'Fish'];
 //   console.log(modalOp)
 
   const [tableData, setTableData] = useState([]);
@@ -12,6 +12,7 @@ function EditableTable({ fetchedData, modalVisible, setModalVisible, handleDelet
 
   const closeModal = () => {
     setModalVisible(false);
+    setClosed(true);
   };
 
   useEffect(() => {
@@ -21,24 +22,25 @@ function EditableTable({ fetchedData, modalVisible, setModalVisible, handleDelet
     }
   }, [fetchedData]);
 
-  const [editableRow, setEditableRow] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(null);
 
   const AddData = () => {
     setModalVisible(true)
     // handleDeleteData(date)
   };
 
-  const deleteRow = (date) => {
+  const deleteRow = (date, index) => {
     handleDeleteData(date)
+    setSelectedIndex(index)
   }
 
   return (
-    <View style={{backgroundColor:'red'}}>
-        <InputModal visible={modalVisible} onClose={closeModal} handleAddData={handleAddData} handleFetchData={handleFetchData}/>
-      <Table style={{backgroundColor:'red'}} borderStyle={{ borderWidth: 2, borderColor: '#c8e1ff' }}>
+    <View >
+        <InputModal visible={modalVisible} onClose={closeModal} closed={closed} loading={loading} handleUpdateData={handleUpdateData} handleAddData={handleAddData} handleFetchData={handleFetchData} handleDeleteData={handleDeleteData}/>
+      <Table borderStyle={{ borderWidth: 1, borderColor: '#f1f8ff'}}>
         <Row
           data={tableHead.map((cellData, colIndex) => (
-            <Text key={colIndex} style={{ width: 100, textAlign: 'left', paddingLeft:5 }}>
+            <Text key={colIndex} style={{ width: 120, textAlign: 'left', paddingLeft:5, fontWeight: 'bold' }}>
               {cellData}
             </Text>
           ))}
@@ -51,34 +53,19 @@ function EditableTable({ fetchedData, modalVisible, setModalVisible, handleDelet
           <Row
             key={index}
             data={[
-              data.date,
+              <Text key={index} style={{ width: 120, textAlign: 'left', paddingLeft:5, fontWeight: 'bold' }}>
+              {data.date}
+            </Text>,
+              
               data.octopus,
               data.prawn,
               data.fish,
-              <View style={{ flexDirection: 'row' }}>
-              {/* <TouchableOpacity
-                onPress={() => {
-                  // Handle the edit action here
-                  AddData()
-                //   toggleEditRow(data.date);
-                }}
-                style={{ margin: 5 }}
-              >
-                <Text style={{ color: 'blue' }}>Edit</Text>
-              </TouchableOpacity> */}
-              <TouchableOpacity
-                onPress={() => {
-                  // Handle the delete action here
-                  deleteRow(data.date)
-                }}
-                style={{ margin: 5 }}
-              >
-                <Text style={{ color: 'red' }}>Delete</Text>
-              </TouchableOpacity>
-            </View>
+              // <View style={{ flexDirection: 'col', padding:0.1, alignItems:'center' }}>
+              //   <Button  disabled={selectedIndex === index && loading} color='red' title={"Del"} onPress={()=> deleteRow(data.date, index)} />
+              // </View>
             ]}
             style={[
-              { height: 40, backgroundColor: index % 2 === 0 ? '#f9f9f9' : 'white' },
+              { height: 60, backgroundColor: 'white', paddingTop: 5 },
             ]}
             textStyle={{ padding: 10 }}
           />
@@ -87,22 +74,5 @@ function EditableTable({ fetchedData, modalVisible, setModalVisible, handleDelet
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#fff',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    input: {
-      height: 40,
-      borderColor: 'gray',
-      borderWidth: 1,
-      margin: 10,
-      padding: 10,
-      width: '80%',
-    },
-  });
 
 export default EditableTable;

@@ -2,33 +2,49 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Button, Modal, StyleSheet, TextInput } from 'react-native';
 import DateTimeField from './DateTimePicker';
 import moment from 'moment';
+import CustomButton from './CustomButton';
 
-const InputModal = ({ visible, onClose, handleAddData, handleFetchData }) => {
+const InputModal = ({ visible, onClose, loading, closed, handleAddData, handleUpdateData, handleFetchData, handleDeleteData }) => {
     const [date, setDate] = useState(moment.now());
     const [octopus, setOctopus] = useState(null);
     const [prawn, setPrawn] = useState(null);
     const [fish, setFish] = useState(null);
-
-    useEffect(() => {
-        console.log(date)
-    }, [date])
+    const [checking, setChecking] = useState(true);
+    const [exist, setExist] = useState(false);
+    const [toUpdate, setToUpdate] = useState(false);
 
     const handleDateChange = async (date) => {
         setDate(moment(date));
+        setChecking(true)
+        setToUpdate(false)
+        setExist(false)
         const data = await handleFetchData(convertDateFormat(moment(date)));
         if(data.length > 0){
-            console.log(data)
+            setOctopus(`${data[0].octopus}`)
+            setPrawn(`${data[0].prawn}`)
+            setFish(`${data[0].fish}`)
+            setExist(true)
+        }else{
+            setOctopus(null)
+            setPrawn(null)
+            setFish(null)
+            setExist(false)
         }
+        setChecking(false)
     }
 
     const saveData = async() => {
         const data = {
             date : convertDateFormat(date),
-            octopus: octopus,
-            prawn: prawn,
-            fish: fish
+            octopus: octopus??0,
+            prawn: prawn??0,
+            fish: fish??0
         }
         await handleAddData(data)
+        setDate(moment.now())
+        setOctopus(null);
+        setPrawn(null);
+        setFish(null);
         onClose();
     }
 
@@ -47,6 +63,34 @@ const InputModal = ({ visible, onClose, handleAddData, handleFetchData }) => {
         return formattedDate;
     }
 
+    const deleteData = async(date) => {
+        await handleDeleteData(convertDateFormat(date));
+        setDate(moment.now())
+        setOctopus(null);
+        setPrawn(null);
+        setFish(null);
+        onClose();
+    }
+
+    const updateData = async(date) => {
+        const data = {
+            date : convertDateFormat(date),
+            octopus: octopus??0,
+            prawn: prawn??0,
+            fish: fish??0
+        }
+        await handleUpdateData(convertDateFormat(date), data);
+        setDate(moment.now())
+        setOctopus(null);
+        setPrawn(null);
+        setFish(null);
+        onClose();
+    }
+
+    useEffect(() => {
+        handleDateChange();
+    },[closed])
+
     return (
         <Modal
             animationType="slide"
@@ -56,28 +100,25 @@ const InputModal = ({ visible, onClose, handleAddData, handleFetchData }) => {
         >
             <View style={styles.modalContainer}>
                 <View style={styles.modalContent}>
-                    <Text>Modal Content Goes Here</Text>
+                    <Text style={styles.heading}>Add/Update Stock</Text>
                     <Text>
                         <DateTimeField
-                            label={'Date'}
                             mode={'date'}
                             value={date}
                             onChange={date => handleDateChange(date)}
-                            // errorMessage={'dfdf'}
-                            containerStyle={styles.container}
+                            containerStyle={styles.input}
                         />
                     </Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Date"
-                        value={date}
-                        onChangeText={(val) => handleDate(val)}
-                    />
+                    {!checking && exist && !toUpdate? <>
+                        <Text style={styles.subtitle}>Octopus : {octopus}</Text>
+                        <Text style={styles.subtitle}>Prawn : {prawn}</Text>
+                        <Text style={styles.subtitle}>Fish : {fish}</Text>
+                    </> : !checking ? <>
                     <TextInput
                         style={styles.input}
                         keyboardType='number-pad'
                         placeholder="Octopus"
-                        value={octopus}
+                        // value={octopus}
                         onChangeText={(cnt) => {
                             if (!isNaN(cnt)) {
                                 setOctopus(parseFloat(cnt));
@@ -86,9 +127,9 @@ const InputModal = ({ visible, onClose, handleAddData, handleFetchData }) => {
                     />
                     <TextInput
                         style={styles.input}
-                        keyboardType='number-pad' // 'number-pad' is another option to show the numeric keyboard
+                        keyboardType='number-pad'
                         placeholder="Prawn"
-                        value={prawn} // Ensure the input value is always a string
+                        // value={prawn}
                         onChangeText={(cnt) => {
                             if (!isNaN(cnt)) {
                                 setPrawn(parseFloat(cnt));
@@ -99,16 +140,18 @@ const InputModal = ({ visible, onClose, handleAddData, handleFetchData }) => {
                         style={styles.input}
                         keyboardType='number-pad'
                         placeholder="Fish"
-                        value={fish}
+                        // value={fish}
                         onChangeText={(cnt) => {
                             if (!isNaN(cnt)) {
                                 setFish(parseFloat(cnt));
                             }
                         }}
-                    />
-                    <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-                        <Button title="Save" onPress={saveData} style={{ marginHorizontal: 10 }} />
-                        <Button title="Close" color={'red'} onPress={onClose} style={{ marginHorizontal: 10 }} />
+                    /></>:<></>}
+                    <View style={{ flexDirection: 'row',  marginTop: 20 }}>
+                        {exist && !toUpdate ? <CustomButton title={"Update"} onPress={() => setToUpdate(true)}/> :
+                        <CustomButton disabled={loading} title={toUpdate? loading? 'Updating...' : 'Update' : loading? "Saving..." : "Save"} onPress={() => toUpdate? updateData(date) : saveData()}/>}
+                        <CustomButton disabled={loading} bgcolor={'red'} title={loading? "Removing..." : "Remove"} onPress={() => deleteData(date)}/>
+                        <CustomButton title={"Close"} bgcolor={'black'} onPress={onClose} style={{ marginHorizontal: 10 }}/>
                     </View>
                 </View>
             </View>
@@ -121,7 +164,19 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    },
+    heading: {
+        marginTop: 5,
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 20
+    },
+    subtitle: {
+        marginTop: 3,
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 4
     },
     modalContent: {
         width: 300,
@@ -129,6 +184,15 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         borderRadius: 10,
         alignItems: 'center',
+    },
+    input: {
+        height: 40,
+        borderColor: 'gray',
+        borderWidth: 1,
+        borderRadius: 10,
+        margin: 10,
+        padding: 10,
+        width: '80%',
     },
 });
 

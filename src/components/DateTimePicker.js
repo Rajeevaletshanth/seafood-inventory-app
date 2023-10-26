@@ -50,19 +50,21 @@ const DateTimeField = props => {
             paddingVertical: 5,
             paddingLeft: 15,
             paddingRight: 10,
-            justifyContent: 'center',
-            borderWidth: 1,
-            borderRadius: 2,
-            backgroundColor: 'white',
+            justifyContent: 'flex-start',
+            // borderWidth: 1,
+            borderRadius: 8,
+            backgroundColor: 'blue',
             height: 40,
             flexDirection: 'row',
-            alignItems: 'center',
+            alignItems: 'flex-start',
           }}>
           <View style={{flex: 1}}>
             {dateLabel ? (
               <Text
                 style={{
-                  color: 'black',
+                  color: 'white',
+                  fontSize: 20,
+                  fontWeight: 'bold'
                 }}>
                 {dateLabel}
               </Text>
