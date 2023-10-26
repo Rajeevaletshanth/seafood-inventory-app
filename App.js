@@ -1,11 +1,11 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import FetchData from './src';
 
 export default function App() {
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <FetchData />
-    </View>
+    </ScrollView>
   );
 }
 
