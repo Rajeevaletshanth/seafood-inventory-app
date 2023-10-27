@@ -4,14 +4,24 @@ import { db } from '../config';
 import { collection, addDoc, query, where, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import EditableTable from './components/Table';
 import CustomButton from './components/CustomButton';
+import { useToast } from "react-native-toast-notifications";
+
 
 const FetchData = () => {
-
+  const toast = useToast();
   const [fetchedData, setFetchedData] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [exportModalVisible, setExportModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(false)
   const [closed, setClosed] = useState(true);
+  const [expClosed, setExpClosed] = useState(true);
+
+  const [stock, setStock] = useState({
+    octopus: 0,
+    prawn: 0,
+    fish: 0
+  })
 
   const getAllStocksData = async () => {
     setFetchLoading(true)
@@ -23,12 +33,33 @@ const FetchData = () => {
       querySnapshot.forEach((doc) => {
         data.push(doc.data());
       });
-
+      let octoCnt = 0; 
+      let praCnt = 0; 
+      let fisCnt = 0;
+      if(data.length > 0){
+        data.forEach((item) => {
+          if(item.type === 'stock'){
+            octoCnt += parseFloat(item.octopus);
+            praCnt += parseFloat(item.prawn);
+            fisCnt += parseFloat(item.fish);
+          }else{
+            octoCnt -= parseFloat(item.octopus);
+            praCnt -= parseFloat(item.prawn);
+            fisCnt -= parseFloat(item.fish);
+          }
+        })
+      }
+      setStock({
+        octopus: octoCnt,
+        prawn: praCnt,
+        fish: fisCnt
+      })
       setFetchedData(data);
       setFetchLoading(false)
     } catch (error) {
       setFetchedData([]);
       setFetchLoading(false)
+      
       console.error('Error fetching all data from Firestore: ', error);
     }
   };
@@ -41,12 +72,13 @@ const FetchData = () => {
         date: data.date,
         octopus: data.octopus,
         prawn: data.prawn,
-        fish: data.fish
+        fish: data.fish,
+        type: data.type??'stock'
       });
 
       getAllStocksData()
       setLoading(false)
-      console.log('Data added successfully!');
+      toast.show('Data added successfully ')
     } catch (error) {
       setLoading(false)
       console.error('Error adding data to Firestore: ', error);
@@ -57,7 +89,7 @@ const FetchData = () => {
     setLoading(true)
     try {
       const stocksRef = collection(db, 'stocks');
-      const q = query(stocksRef, where('date', '==', deleteDate));
+      const q = query(stocksRef, where('date', '==', deleteDate), where('type', '==', 'stock'));
       const querySnapshot = await getDocs(q);
 
       querySnapshot.forEach(async (doc) => {
@@ -66,7 +98,7 @@ const FetchData = () => {
       });
 
       console.log('Data deleted successfully for date:', deleteDate);
-      
+      toast.show('Data deleted successfully ')
       getAllStocksData();
       setLoading(false)
       
@@ -75,6 +107,26 @@ const FetchData = () => {
       console.error('Error deleting data from Firestore: ', error);
     }
   };
+
+  const deleteAll = async() => {
+    try {
+      const stocksRef = collection(db, 'stocks');
+      const q = query(stocksRef);
+      const querySnapshot = await getDocs(q);
+
+      querySnapshot.forEach(async (doc) => {
+        const docRef = doc.ref;
+        await deleteDoc(docRef);
+      });
+
+      toast.show('All Data deleted successfully ')
+      getAllStocksData();
+      setLoading(false)
+    } catch (error) {
+      setLoading(false)
+      console.error('Error deleting data from Firestore: ', error);
+    }
+  }
 
   const handleUpdateData = async (updateDate, newData) => {
     setLoading(true);
@@ -90,7 +142,7 @@ const FetchData = () => {
       });
   
       console.log('Data updated successfully for date:', updateDate);
-  
+      toast.show('Data updated successfully ')
       getAllStocksData();
       setLoading(false);
   
@@ -103,7 +155,7 @@ const FetchData = () => {
   const handleFetchData = async (date) => {
     try {
       const stocksRef = collection(db, 'stocks');
-      const q = query(stocksRef, where('date', '==', date));
+      const q = query(stocksRef, where('date', '==', date), where('type', '==', 'stock'));
       const querySnapshot = await getDocs(q);
 
       const data = [];
@@ -131,16 +183,15 @@ const FetchData = () => {
     <View style={styles.container}>
       <Text style={styles.heading}>Dashboard</Text>      
       <View style={{marginBottom:10, marginTop: 10, width:'90%'}}>
-        <EditableTable fetchedData={fetchedData} modalVisible={modalVisible} loading={loading} setModalVisible={setModalVisible} closed={closed} setClosed={setClosed} handleUpdateData={handleUpdateData} handleDeleteData={handleDeleteData} handleAddData={handleAddData} handleFetchData={handleFetchData}/>
+        <EditableTable fetchedData={fetchedData} stock={stock} modalVisible={modalVisible} exportModalVisible={exportModalVisible} loading={loading} setModalVisible={setModalVisible} setExportModalVisible={setExportModalVisible} closed={closed} setClosed={setClosed} expClosed={expClosed} setExpClosed={setExpClosed} handleUpdateData={handleUpdateData} handleDeleteData={handleDeleteData} handleAddData={handleAddData} handleFetchData={handleFetchData}/>
       </View>
-      <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', paddingBottom: 20 }}>
         <CustomButton title={'Refresh'} disabled={fetchLoading} onPress={() => getAllStocksData()}  bgcolor={'#ff6600'} />
         <CustomButton title={'Add Data'} onPress={() => {setModalVisible(true); setClosed(false);}}  />
-        <CustomButton title={'Export'} onPress={() => {}} />
+        <CustomButton title={'Export'} onPress={() => {setExportModalVisible(true); setExpClosed(false);}} />
       </View>
-      
+      {fetchedData.length > 0 && <CustomButton title={'Delete All'} bgcolor={'#fafafa'} color={'black'} onPress={() => deleteAll()} />}
     </View> 
-    
   );
 };
 

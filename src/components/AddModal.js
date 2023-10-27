@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Button, Modal, StyleSheet, TextInput } from 'react-native';
 import DateTimeField from './DateTimePicker';
 import moment from 'moment';
+import { Table, Row } from 'react-native-table-component';
 import CustomButton from './CustomButton';
+import CloseIcon from './IconButton';
 
-const InputModal = ({ visible, onClose, loading, closed, handleAddData, handleUpdateData, handleFetchData, handleDeleteData }) => {
+const InputModal = ({ visible, stock, onClose, loading, closed, handleAddData, handleUpdateData, handleFetchData, handleDeleteData }) => {
     const [date, setDate] = useState(moment.now());
     const [octopus, setOctopus] = useState(null);
     const [prawn, setPrawn] = useState(null);
@@ -38,7 +40,8 @@ const InputModal = ({ visible, onClose, loading, closed, handleAddData, handleUp
             date : convertDateFormat(date),
             octopus: octopus??0,
             prawn: prawn??0,
-            fish: fish??0
+            fish: fish??0,
+            type: 'stock'
         }
         await handleAddData(data)
         setDate(moment.now())
@@ -91,6 +94,10 @@ const InputModal = ({ visible, onClose, loading, closed, handleAddData, handleUp
         handleDateChange();
     },[closed])
 
+    const renderRowText = (text, header = false) => {
+        return <Text style={{ width: 120, textAlign: 'center', padding:5, fontWeight: 'bold', backgroundColor: header? '#f1f8ff' : 'white' }}>{text}</Text>
+    }
+
     return (
         <Modal
             animationType="slide"
@@ -100,6 +107,12 @@ const InputModal = ({ visible, onClose, loading, closed, handleAddData, handleUp
         >
             <View style={styles.modalContainer}>
                 <View style={styles.modalContent}>
+                    <CloseIcon onPress={onClose} style={{
+                        position: 'absolute',
+                        top: 10,
+                        right: 10,
+                        zIndex: 1,
+                    }}/>
                     <Text style={styles.heading}>Add/Update Stock</Text>
                     <Text>
                         <DateTimeField
@@ -110,48 +123,67 @@ const InputModal = ({ visible, onClose, loading, closed, handleAddData, handleUp
                         />
                     </Text>
                     {!checking && exist && !toUpdate? <>
-                        <Text style={styles.subtitle}>Octopus : {octopus}</Text>
-                        <Text style={styles.subtitle}>Prawn : {prawn}</Text>
-                        <Text style={styles.subtitle}>Fish : {fish}</Text>
+                        <View style={{width:'90%', paddingTop: 20, paddingBottom: 20}}>
+                            <Table borderStyle={{ borderWidth: 1, borderColor: '#f1f8ff'}}>
+                                <Row data={[renderRowText('Items', true), renderRowText('Stocks', true)]}/>
+                                <Row data={[renderRowText('Octopus'), renderRowText(octopus)]}/>
+                                <Row data={[renderRowText('Prawn'), renderRowText(prawn)]}/>
+                                <Row data={[renderRowText('Fish'), renderRowText(fish)]}/>
+                            </Table>
+                        </View>
                     </> : !checking ? <>
-                    <TextInput
-                        style={styles.input}
-                        keyboardType='number-pad'
-                        placeholder="Octopus"
-                        // value={octopus}
-                        onChangeText={(cnt) => {
-                            if (!isNaN(cnt)) {
-                                setOctopus(parseFloat(cnt));
-                            }
-                        }}
-                    />
-                    <TextInput
+                    <View style={{paddingTop:5}}/>
+                    
+                    <View style={{ flexDirection: 'row',  marginTop: 20 }}>
+                        <Text style={{marginTop:13, width: '25%'}}>Octopus</Text>
+                        <TextInput
+                            style={styles.input}
+                            keyboardType='number-pad'
+                            placeholder="Octopus"
+                            value={octopus}
+                            onChangeText={(cnt) => {
+                                if (!isNaN(cnt)) {
+                                    setOctopus(parseFloat(cnt));
+                                }
+                            }}
+                        />
+                    </View>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={{marginTop:13, width: '25%'}}>Prawn</Text>
+                        <TextInput
                         style={styles.input}
                         keyboardType='number-pad'
                         placeholder="Prawn"
-                        // value={prawn}
+                        value={prawn}
                         onChangeText={(cnt) => {
                             if (!isNaN(cnt)) {
                                 setPrawn(parseFloat(cnt));
                             }
                         }}
                     />
-                    <TextInput
-                        style={styles.input}
-                        keyboardType='number-pad'
-                        placeholder="Fish"
-                        // value={fish}
-                        onChangeText={(cnt) => {
-                            if (!isNaN(cnt)) {
-                                setFish(parseFloat(cnt));
-                            }
-                        }}
-                    /></>:<></>}
+                    </View>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={{marginTop:13, width: '25%'}}>Fish</Text>
+                        <TextInput
+                            style={styles.input}
+                            keyboardType='number-pad'
+                            placeholder="Fish"
+                            value={fish}
+                            onChangeText={(cnt) => {
+                                if (!isNaN(cnt)) {
+                                    setFish(parseFloat(cnt));
+                                }
+                            }}
+                        />
+                    </View>
+                    
+                    
+                    </>:<></>}
                     <View style={{ flexDirection: 'row',  marginTop: 20 }}>
-                        {exist && !toUpdate ? <CustomButton title={"Update"} onPress={() => setToUpdate(true)}/> :
+                        {exist && !toUpdate ? <CustomButton title={"Edit"} onPress={() => setToUpdate(true)}/> :
                         <CustomButton disabled={loading} title={toUpdate? loading? 'Updating...' : 'Update' : loading? "Saving..." : "Save"} onPress={() => toUpdate? updateData(date) : saveData()}/>}
-                        <CustomButton disabled={loading} bgcolor={'red'} title={loading? "Removing..." : "Remove"} onPress={() => deleteData(date)}/>
-                        <CustomButton title={"Close"} bgcolor={'black'} onPress={onClose} style={{ marginHorizontal: 10 }}/>
+                        {exist && <CustomButton disabled={loading} bgcolor={'black'} title={loading? "Removing..." : "Remove"} onPress={() => deleteData(date)}/>}
+                        {/* <CustomButton title={"Close"} bgcolor={'black'} onPress={onClose} style={{ marginHorizontal: 10 }}/> */}
                     </View>
                 </View>
             </View>
@@ -186,13 +218,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     input: {
-        height: 40,
+        height: 30,
         borderColor: 'gray',
+        textAlign: 'center',
         borderWidth: 1,
         borderRadius: 10,
         margin: 10,
-        padding: 10,
-        width: '80%',
+        padding: 5,
+        width: '40%',
     },
 });
 

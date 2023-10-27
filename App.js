@@ -1,11 +1,15 @@
 import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import FetchData from './src';
+import { ToastProvider } from 'react-native-toast-notifications'
+
 
 export default function App() {
   return (
-    <ScrollView style={styles.container}>
-      <FetchData />
-    </ScrollView>
+    <ToastProvider>
+      <ScrollView style={styles.container}>
+        <FetchData />
+      </ScrollView>
+    </ToastProvider>
   );
 }
 
