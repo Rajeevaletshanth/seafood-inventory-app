@@ -4,13 +4,14 @@ import { Table, Row } from 'react-native-table-component';
 import InputModal from './AddModal';
 import ExportModal from './ExportModal';
 
-function EditableTable({ fetchedData, stock, modalVisible, exportModalVisible, setExportModalVisible, loading, closed, setClosed, expClosed, setExpClosed, handleUpdateData,  setModalVisible, handleDeleteData, handleAddData, handleFetchData }) {
+function EditableTable({ fetchedData, stock, modalVisible, handleMultipleUpdateData, exportModalVisible, setExportModalVisible, loading, closed, setClosed, expClosed, setExpClosed, handleUpdateData,  setModalVisible, handleDeleteData, handleAddData, handleFetchData }) {
   const tableHead = ['Date', 'Octopus', 'Prawn', 'Fish'];
 //   console.log(modalOp)
 
   const [tableData, setTableData] = useState([]);
   const [exportTableData, setExportTableData] = useState([]);
-  
+  const [expTableData, setExpTableData] = useState([]);
+  const [options, setOptions] = useState([])
 
   const closeModal = () => {
     setModalVisible(false);
@@ -20,6 +21,7 @@ function EditableTable({ fetchedData, stock, modalVisible, exportModalVisible, s
   const closeExpModal = () => {
     setExportModalVisible(false);
     setExpClosed(true);
+    setExpTableData([])
   };
 
   useEffect(() => {
@@ -29,6 +31,9 @@ function EditableTable({ fetchedData, stock, modalVisible, exportModalVisible, s
       let stockKey = 0;
       let exportData = [];
       let exportKey = 0;
+
+      let optArr = [];
+      let optInd = 0;
       fetchedData.map((item) => {
         if(item.type === 'stock'){          
           stockData[stockKey] = item
@@ -37,9 +42,15 @@ function EditableTable({ fetchedData, stock, modalVisible, exportModalVisible, s
           exportData[exportKey] = item
           exportKey++;
         }
+
+        if(item.octopus !== 0 || item.fish !== 0 || item.prawn !== 0){
+          optArr[optInd] = item
+          optInd++;
+        }
       })
       setTableData(stockData)
-      setExportTableData(exportData)    
+      setExportTableData(exportData)   
+      setOptions(optArr)
     }
   }, [fetchedData]);
 
@@ -49,7 +60,7 @@ function EditableTable({ fetchedData, stock, modalVisible, exportModalVisible, s
 
   return (
     <View >
-        <ExportModal visible={exportModalVisible} onClose={closeExpModal}  stock={stock} closed={expClosed} loading={loading} handleAddData={handleAddData}/>
+        <ExportModal fetchedData={options} tableData={expTableData} handleMultipleUpdateData={handleMultipleUpdateData} setTableData={setExpTableData} visible={exportModalVisible} onClose={closeExpModal}  stock={stock} closed={expClosed} loading={loading} handleAddData={handleAddData}/>
         <InputModal visible={modalVisible} onClose={closeModal} stock={stock} closed={closed} loading={loading} handleUpdateData={handleUpdateData} handleAddData={handleAddData} handleFetchData={handleFetchData} handleDeleteData={handleDeleteData}/>
       <Text style={{fontWeight:'bold', textAlign:'center',}}>Stock Table</Text>
       <Table borderStyle={{ borderWidth: 1, borderColor: '#f1f8ff'}}>
@@ -65,7 +76,7 @@ function EditableTable({ fetchedData, stock, modalVisible, exportModalVisible, s
           textStyle={{ padding: 10 }}
         />
         {tableData.map((data, index) => (
-          <Row
+          data.octopus === 0 && data.prawn === 0 && data.fish === 0 ? <></> : <Row
             key={index}
             data={[
               <Text key={index} style={{ width: 120, textAlign: 'left', paddingLeft:5, fontWeight: 'bold' }}>
@@ -124,8 +135,8 @@ function EditableTable({ fetchedData, stock, modalVisible, exportModalVisible, s
       </Table>}
 
       <View style={{paddingBottom:20}} />
-      {exportTableData.length > 0 && <Text style={{fontWeight:'bold', textAlign:'center',}}>Remaining Stock</Text>}
-      {exportTableData.length > 0 && <Table  borderStyle={{ borderWidth: 1, borderColor: '#f1f8ff'}}>
+      <Text style={{fontWeight:'bold', textAlign:'center',}}>Remaining Stock</Text>
+      <Table  borderStyle={{ borderWidth: 1, borderColor: '#f1f8ff'}}>
         <Row 
           data={[
             renderRowText('Octopus', true),renderRowText('Prawn', true),renderRowText('Fish', true)
@@ -136,7 +147,7 @@ function EditableTable({ fetchedData, stock, modalVisible, exportModalVisible, s
             renderRowText(stock.octopus),renderRowText(stock.prawn),renderRowText(stock.fish)
           ]}
         />
-      </Table>}
+      </Table>
       <View style={{paddingBottom:20}} />
     </View>
   );

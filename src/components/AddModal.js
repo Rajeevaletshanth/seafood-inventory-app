@@ -5,6 +5,7 @@ import moment from 'moment';
 import { Table, Row } from 'react-native-table-component';
 import CustomButton from './CustomButton';
 import CloseIcon from './IconButton';
+import { useToast } from "react-native-toast-notifications";
 
 const InputModal = ({ visible, stock, onClose, loading, closed, handleAddData, handleUpdateData, handleFetchData, handleDeleteData }) => {
     const [date, setDate] = useState(moment.now());
@@ -14,6 +15,8 @@ const InputModal = ({ visible, stock, onClose, loading, closed, handleAddData, h
     const [checking, setChecking] = useState(true);
     const [exist, setExist] = useState(false);
     const [toUpdate, setToUpdate] = useState(false);
+
+    const toast = useToast();
 
     const handleDateChange = async (date) => {
         setDate(moment(date));
@@ -36,19 +39,23 @@ const InputModal = ({ visible, stock, onClose, loading, closed, handleAddData, h
     }
 
     const saveData = async() => {
-        const data = {
-            date : convertDateFormat(date),
-            octopus: octopus??0,
-            prawn: prawn??0,
-            fish: fish??0,
-            type: 'stock'
+        if((octopus === 0 || !octopus) && (prawn === 0 || !prawn) && (prawn === 0 || !prawn)){
+            toast.show('Cannot add empty stock');
+        }else{
+            const data = {
+                date : convertDateFormat(date),
+                octopus: octopus??0,
+                prawn: prawn??0,
+                fish: fish??0,
+                type: 'stock'
+            }
+            await handleAddData(data)
+            setDate(moment.now())
+            setOctopus(null);
+            setPrawn(null);
+            setFish(null);
+            onClose();
         }
-        await handleAddData(data)
-        setDate(moment.now())
-        setOctopus(null);
-        setPrawn(null);
-        setFish(null);
-        onClose();
     }
 
     const convertDateFormat = (dateString) => {

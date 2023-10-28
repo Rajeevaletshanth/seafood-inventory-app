@@ -42,11 +42,12 @@ const FetchData = () => {
             octoCnt += parseFloat(item.octopus);
             praCnt += parseFloat(item.prawn);
             fisCnt += parseFloat(item.fish);
-          }else{
-            octoCnt -= parseFloat(item.octopus);
-            praCnt -= parseFloat(item.prawn);
-            fisCnt -= parseFloat(item.fish);
           }
+          // else{
+          //   octoCnt -= parseFloat(item.octopus);
+          //   praCnt -= parseFloat(item.prawn);
+          //   fisCnt -= parseFloat(item.fish);
+          // }
         })
       }
       setStock({
@@ -152,6 +153,34 @@ const FetchData = () => {
     }
   };
 
+  const handleMultipleUpdateData = async (updateDataArray) => {
+    setLoading(true);
+    try {
+      const stocksRef = collection(db, 'stocks');
+  
+      for (const updateData of updateDataArray) {
+        const { updateDate, newData } = updateData;
+  
+        const q = query(stocksRef, where('date', '==', updateDate));
+        const querySnapshot = await getDocs(q);
+  
+        querySnapshot.forEach(async (doc) => {
+          const docRef = doc.ref;
+          await updateDoc(docRef, newData);
+        });
+  
+        console.log('Data updated successfully for date:', updateDate);
+      }
+  
+      toast.show('Data updated successfully');
+      getAllStocksData(); 
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error('Error updating data in Firestore: ', error);
+    }
+  };
+
   const handleFetchData = async (date) => {
     try {
       const stocksRef = collection(db, 'stocks');
@@ -183,12 +212,12 @@ const FetchData = () => {
     <View style={styles.container}>
       <Text style={styles.heading}>Dashboard</Text>      
       <View style={{marginBottom:10, marginTop: 10, width:'90%'}}>
-        <EditableTable fetchedData={fetchedData} stock={stock} modalVisible={modalVisible} exportModalVisible={exportModalVisible} loading={loading} setModalVisible={setModalVisible} setExportModalVisible={setExportModalVisible} closed={closed} setClosed={setClosed} expClosed={expClosed} setExpClosed={setExpClosed} handleUpdateData={handleUpdateData} handleDeleteData={handleDeleteData} handleAddData={handleAddData} handleFetchData={handleFetchData}/>
+        <EditableTable fetchedData={fetchedData} stock={stock} modalVisible={modalVisible} handleMultipleUpdateData={handleMultipleUpdateData} exportModalVisible={exportModalVisible} loading={loading} setModalVisible={setModalVisible} setExportModalVisible={setExportModalVisible} closed={closed} setClosed={setClosed} expClosed={expClosed} setExpClosed={setExpClosed} handleUpdateData={handleUpdateData} handleDeleteData={handleDeleteData} handleAddData={handleAddData} handleFetchData={handleFetchData}/>
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'center', paddingBottom: 20 }}>
         <CustomButton title={'Refresh'} disabled={fetchLoading} onPress={() => getAllStocksData()}  bgcolor={'#ff6600'} />
         <CustomButton title={'Add Data'} onPress={() => {setModalVisible(true); setClosed(false);}}  />
-        <CustomButton title={'Export'} onPress={() => {setExportModalVisible(true); setExpClosed(false);}} />
+        {fetchedData.length > 0 && <CustomButton title={'Export'} onPress={() => {setExportModalVisible(true); setExpClosed(false);}} />}
       </View>
       {fetchedData.length > 0 && <CustomButton title={'Delete All'} bgcolor={'#fafafa'} color={'black'} onPress={() => deleteAll()} />}
     </View> 

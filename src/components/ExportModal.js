@@ -1,19 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, Modal, StyleSheet, TextInput } from 'react-native';
+import { View, Text, Button, Modal, StyleSheet, TextInput, ScrollView } from 'react-native';
 import DateTimeField from './DateTimePicker';
 import moment from 'moment';
 import { Table, Row } from 'react-native-table-component';
 import CustomButton from './CustomButton';
 import CloseIcon from './IconButton';
+import { useToast } from "react-native-toast-notifications";
+import MultiSelect from './MultipleSelect';
 
-const ExportModal = ({ visible, onClose, stock, loading, closed, handleAddData, handleUpdateData, handleFetchData, handleDeleteData }) => {
+const ExportModal = ({ fetchedData, visible, onClose, tableData, setTableData, handleMultipleUpdateData, stock, loading, closed, handleAddData, handleUpdateData, handleFetchData, handleDeleteData }) => {
     const [date, setDate] = useState(moment.now());
     const [octopus, setOctopus] = useState(null);
     const [prawn, setPrawn] = useState(null);
     const [fish, setFish] = useState(null);
-    const [checking, setChecking] = useState(true);
-    const [exist, setExist] = useState(false);
-    const [toUpdate, setToUpdate] = useState(false);
+    const [updTableData, setUpdTableData] = useState([]);
+
+    const [selected, setSelected] = useState([]);
+
+    const toast = useToast();
 
     const handleDateChange = async (date) => {
         setDate(moment(date));
@@ -36,19 +40,47 @@ const ExportModal = ({ visible, onClose, stock, loading, closed, handleAddData, 
     }
 
     const saveData = async() => {
-        const data = {
-            date : convertDateFormat(date),
-            octopus: octopus??0,
-            prawn: prawn??0,
-            fish: fish??0,
-            type: 'export'
+        let updateData = [];
+        let updIndex = 0;
+
+        if(fetchedData){
+            fetchedData.map((item, key) => {
+                updTableData.map((updItem, updKey) => {
+                    if(item.date === updItem.date){
+                        updateData[updIndex] = {
+                            updateDate: item.date,
+                            newData: {
+                                date: item.date,
+                                octopus: item.octopus - updItem.octopus,
+                                prawn: item.prawn - updItem.prawn,
+                                fish: item.fish - updItem.fish,
+                                type: item.type
+                            }
+                        }
+                        updIndex++;
+                    }
+                })
+            })
         }
-        await handleAddData(data)
-        setDate(moment.now())
-        setOctopus(null);
-        setPrawn(null);
-        setFish(null);
-        onClose();
+        // console.log(updateData)
+        handleMultipleUpdateData(updateData)
+        // if((octopus === 0 || !octopus) && (prawn === 0 || !prawn) && (prawn === 0 || !prawn)){
+        //     toast.show('Cannot export empty stock');
+        // }else{
+        //     const data = {
+        //         date : convertDateFormat(date),
+        //         octopus: octopus??0,
+        //         prawn: prawn??0,
+        //         fish: fish??0,
+        //         type: 'export'
+        //     }
+        //     await handleAddData(data)
+        //     setDate(moment.now())
+        //     setOctopus(null);
+        //     setPrawn(null);
+        //     setFish(null);
+        //     onClose();
+        // }
     }
 
     const convertDateFormat = (dateString) => {
@@ -82,12 +114,10 @@ const ExportModal = ({ visible, onClose, stock, loading, closed, handleAddData, 
     }
 
     useEffect(() => {
+        setSelected([])
         handleDateChange();
+        setTableData([])
     },[closed])
-
-    const renderRowText = (text, header = false) => {
-        return <Text style={{ width: 120, textAlign: 'center', padding:5, fontWeight: 'bold', backgroundColor: header? '#f1f8ff' : 'white' }}>{text}</Text>
-    }
 
     return (
         <Modal
@@ -105,59 +135,10 @@ const ExportModal = ({ visible, onClose, stock, loading, closed, handleAddData, 
                         zIndex: 1,
                     }}/>
                     <Text style={styles.heading}>Export Stock</Text>
-                    <Text>
-                        <DateTimeField
-                            mode={'date'}
-                            value={date}
-                            onChange={date => handleDateChange(date)}
-                            containerStyle={styles.input}
-                        />
-                    </Text>
-                    
-                    <View style={{paddingTop:5}}/>
-                    
-                    <View style={{ flexDirection: 'row',  marginTop: 20 }}>
-                        <Text style={{marginTop:13, width: '25%'}}>Octopus</Text>
-                        <TextInput
-                            style={styles.input}
-                            keyboardType='number-pad'
-                            placeholder="Octopus"
-                            value={`${octopus??''}`}
-                            onChangeText={(cnt) => {
-                                if (!isNaN(cnt)) {
-                                    setOctopus(parseFloat(cnt) < stock.octopus ? parseFloat(cnt) : cnt? stock.octopus: '');
-                                }
-                            }}
-                        />
-                    </View>
-                    <View style={{ flexDirection: 'row' }}>
-                        <Text style={{marginTop:13, width: '25%'}}>Prawn</Text>
-                        <TextInput
-                        style={styles.input}
-                        keyboardType='number-pad'
-                        placeholder="Prawn"
-                        value={`${prawn??''}`}
-                            onChangeText={(cnt) => {
-                                if (!isNaN(cnt)) {
-                                    setPrawn(parseFloat(cnt) < stock.prawn ? parseFloat(cnt) : cnt? stock.prawn: '');
-                                }
-                            }}
-                    />
-                    </View>
-                    <View style={{ flexDirection: 'row' }}>
-                        <Text style={{marginTop:13, width: '25%'}}>Fish</Text>
-                        <TextInput
-                            style={styles.input}
-                            keyboardType='number-pad'
-                            placeholder="Fish"
-                            value={`${fish??''}`}
-                            onChangeText={(cnt) => {
-                                if (!isNaN(cnt)) {
-                                    setFish(parseFloat(cnt) < stock.fish ? parseFloat(cnt) : cnt? stock.fish: '');
-                                }
-                            }}
-                        />
-                    </View>
+                    <ScrollView style={{width:'100%', maxHeight:'80%'}} >
+                        
+                        <MultiSelect fetchedData={fetchedData} selected={selected} updTableData={updTableData} setUpdTableData={setUpdTableData} tableData={tableData} setTableData={setTableData} setSelected={setSelected}/>
+                    </ScrollView>
 
                     <View style={{ flexDirection: 'row',  marginTop: 20 }}>
                         <CustomButton title={"Export"} onPress={() => saveData()}/>
