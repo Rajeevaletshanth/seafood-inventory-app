@@ -62,25 +62,9 @@ const ExportModal = ({ fetchedData, visible, onClose, tableData, setTableData, h
                 })
             })
         }
-        // console.log(updateData)
-        handleMultipleUpdateData(updateData)
-        // if((octopus === 0 || !octopus) && (prawn === 0 || !prawn) && (prawn === 0 || !prawn)){
-        //     toast.show('Cannot export empty stock');
-        // }else{
-        //     const data = {
-        //         date : convertDateFormat(date),
-        //         octopus: octopus??0,
-        //         prawn: prawn??0,
-        //         fish: fish??0,
-        //         type: 'export'
-        //     }
-        //     await handleAddData(data)
-        //     setDate(moment.now())
-        //     setOctopus(null);
-        //     setPrawn(null);
-        //     setFish(null);
-        //     onClose();
-        // }
+        await handleMultipleUpdateData(updateData)
+        onClose();
+
     }
 
     const convertDateFormat = (dateString) => {
