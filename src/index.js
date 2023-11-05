@@ -24,46 +24,55 @@ const FetchData = () => {
   })
 
   const getAllStocksData = async () => {
-    setFetchLoading(true)
+    setFetchLoading(true);
     try {
       const stocksRef = collection(db, 'stocks');
       const querySnapshot = await getDocs(stocksRef);
-
+  
       const data = [];
       querySnapshot.forEach((doc) => {
         data.push(doc.data());
       });
-      let octoCnt = 0; 
-      let praCnt = 0; 
+  
+      data.sort((a, b) => {
+        const dateA = new Date(
+          a.date.split('/').reverse().join('-')  // Assuming 'date' is in 'DD/MM/YYYY' format
+        );
+        const dateB = new Date(
+          b.date.split('/').reverse().join('-')
+        );
+  
+        return dateA - dateB;
+      });
+  
+      let octoCnt = 0;
+      let praCnt = 0;
       let fisCnt = 0;
-      if(data.length > 0){
+      if (data.length > 0) {
         data.forEach((item) => {
-          if(item.type === 'stock'){
+          if (item.type === 'stock') {
             octoCnt += parseFloat(item.octopus);
             praCnt += parseFloat(item.prawn);
             fisCnt += parseFloat(item.fish);
           }
-          // else{
-          //   octoCnt -= parseFloat(item.octopus);
-          //   praCnt -= parseFloat(item.prawn);
-          //   fisCnt -= parseFloat(item.fish);
-          // }
-        })
+        });
       }
+  
       setStock({
         octopus: octoCnt,
         prawn: praCnt,
-        fish: fisCnt
-      })
+        fish: fisCnt,
+      });
       setFetchedData(data);
-      setFetchLoading(false)
+      setFetchLoading(false);
     } catch (error) {
       setFetchedData([]);
-      setFetchLoading(false)
-      
+      setFetchLoading(false);
+  
       console.error('Error fetching all data from Firestore: ', error);
     }
   };
+  
   
   const handleAddData = async (data) => {
     setLoading(true)
@@ -219,7 +228,7 @@ const FetchData = () => {
         <CustomButton title={'Add Data'} onPress={() => {setModalVisible(true); setClosed(false);}}  />
         {fetchedData.length > 0 && <CustomButton title={'Export'} onPress={() => {setExportModalVisible(true); setExpClosed(false);}} />}
       </View>
-      {fetchedData.length > 0 && <CustomButton title={'Delete All'} bgcolor={'#fafafa'} color={'black'} onPress={() => deleteAll()} />}
+      {/* {fetchedData.length > 0 && <CustomButton title={'Delete All'} bgcolor={'#fafafa'} color={'black'} onPress={() => deleteAll()} />} */}
     </View> 
   );
 };
